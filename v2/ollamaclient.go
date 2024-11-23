@@ -160,6 +160,22 @@ func (oc *Config) SetTool(tool Tool) {
 
 // GetChatResponse sends a request to the Ollama API and returns the generated response
 func (oc *Config) GetChatResponse(promptAndOptionalImages ...string) (OutputResponse, error) {
+
+	messages := []Message{}
+	if oc.SystemPrompt != "" {
+		messages = append(messages, Message{
+			Role:    "system",
+			Content: oc.SystemPrompt,
+		})
+	}
+
+	output, err := oc.ContinueChatResponse(messages, promptAndOptionalImages...)
+
+	return output, err
+}
+
+// ContinueeChatResponse sends a request to the Ollama API with previous messages and returns the generated response
+func (oc *Config) ContinueChatResponse(messages []Message, promptAndOptionalImages ...string) (OutputResponse, error) {
 	var (
 		temperature float64
 		seed        = oc.SeedOrNegative
@@ -175,17 +191,11 @@ func (oc *Config) GetChatResponse(promptAndOptionalImages ...string) (OutputResp
 	if seed < 0 {
 		temperature = oc.TemperatureIfNegativeSeed
 	}
-	messages := []Message{}
-	if oc.SystemPrompt != "" {
-		messages = append(messages, Message{
-			Role:    "system",
-			Content: oc.SystemPrompt,
-		})
-	}
 	messages = append(messages, Message{
 		Role:    "user",
 		Content: prompt,
 	})
+
 	var reqBody GenerateChatRequest
 	if len(images) > 0 {
 		reqBody = GenerateChatRequest{
