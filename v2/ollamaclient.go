@@ -179,46 +179,38 @@ func (oc *Config) ContinueChatResponse(messages []Message, promptAndOptionalImag
 	var (
 		temperature float64
 		seed        = oc.SeedOrNegative
+		images      []string
+		reqBody     GenerateChatRequest
 	)
-	if len(promptAndOptionalImages) == 0 {
-		return OutputResponse{}, errors.New("at least one prompt must be given (and then optionally, base64 encoded JPG or PNG image strings)")
-	}
-	prompt := promptAndOptionalImages[0]
-	var images []string
-	if len(promptAndOptionalImages) > 1 {
-		images = promptAndOptionalImages[1:]
-	}
 	if seed < 0 {
 		temperature = oc.TemperatureIfNegativeSeed
 	}
-	messages = append(messages, Message{
-		Role:    "user",
-		Content: prompt,
-	})
 
-	var reqBody GenerateChatRequest
-	if len(images) > 0 {
-		reqBody = GenerateChatRequest{
-			Model:    oc.ModelName,
-			Messages: messages,
-			Images:   images,
-			Tools:    oc.Tools,
-			Options: RequestOptions{
-				Seed:        seed,        // set to -1 to make it random
-				Temperature: temperature, // set to 0 together with a specific seed to make output reproducible
-			},
+	if len(promptAndOptionalImages) > 0 {
+
+		prompt := promptAndOptionalImages[0]
+		if len(promptAndOptionalImages) > 1 {
+			images = promptAndOptionalImages[1:]
 		}
-	} else {
-		reqBody = GenerateChatRequest{
-			Model:    oc.ModelName,
-			Messages: messages,
-			Tools:    oc.Tools,
-			Options: RequestOptions{
-				Seed:        seed,        // set to -1 to make it random
-				Temperature: temperature, // set to 0 together with a specific seed to make output reproducible
-			},
-		}
+
+		messages = append(messages, Message{
+			Role:    "user",
+			Content: prompt,
+		})
+
 	}
+
+	reqBody = GenerateChatRequest{
+		Model:    oc.ModelName,
+		Messages: messages,
+		Images:   images,
+		Tools:    oc.Tools,
+		Options: RequestOptions{
+			Seed:        seed,        // set to -1 to make it random
+			Temperature: temperature, // set to 0 together with a specific seed to make output reproducible
+		},
+	}
+
 	if oc.ContextLength != 0 {
 		reqBody.Options.ContextLength = oc.ContextLength
 	}
